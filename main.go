@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"strings"
 )
 
 type Service struct {
@@ -20,6 +22,9 @@ type Service struct {
 }
 
 var services []Service
+
+// Logger with timestamp
+var logger = log.New(os.Stdout, "", log.LstdFlags)
 
 func main() {
 	http.HandleFunc("/", home)
@@ -50,31 +55,58 @@ func addService(w http.ResponseWriter, r *http.Request) {
 	// Store services in JSON file
 	storeServices()
 
+	// Log the added service with timestamp
+	logger.Printf("Service added: %+v\n", service)
+
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func viewServices(w http.ResponseWriter, r *http.Request) {
-	// Display all services in a table format
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, "<h1>All Services</h1>")
-	fmt.Fprintf(w, "<table border='1'><tr><th>AppCode</th><th>AppName</th><th>Env</th><th>Cloud</th><th>Region</th><th>TeamName</th><th>PMContact</th><th>TeamContact</th></tr>")
-	for _, service := range services {
-		fmt.Fprintf(w, "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>",
-			service.AppCode, service.AppName, service.Env, service.Cloud, service.Region, service.TeamName, service.PMContact, service.TeamContact)
+	// Display all services or filtered services based on search query
+	if r.Method == "POST" {
+		r.ParseForm()
+		query := r.FormValue("query")
+		filteredServices := filterServices(query)
+		renderServices(w, filteredServices)
+		return
 	}
-	fmt.Fprintf(w, "</table>")
+
+	// If no search query, render all services
+	renderServices(w, services)
+}
+
+func filterServices(query string) []Service {
+	var filtered []Service
+	for _, service := range services {
+		if strings.Contains(strings.ToLower(service.AppCode), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(service.AppName), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(service.Env), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(service.Cloud), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(service.Region), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(service.TeamName), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(service.PMContact), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(service.TeamContact), strings.ToLower(query)) {
+			filtered = append(filtered, service)
+		}
+	}
+	return filtered
+}
+
+func renderServices(w http.ResponseWriter, svc []Service) {
+	tmpl := template.Must(template.ParseFiles("view.html"))
+	tmpl.Execute(w, svc)
 }
 
 func storeServices() {
 	data, err := json.Marshal(services)
 	if err != nil {
-		fmt.Println("Error marshalling services:", err)
+		logger.Println("Error marshalling services:", err)
 		return
 	}
 
 	err = writeFile("services.json", data)
 	if err != nil {
-		fmt.Println("Error writing services to file:", err)
+		logger.Println("Error writing services to file:", err)
 	}
 }
 

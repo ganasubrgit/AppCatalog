@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Services</title>
+    <style>
+        /* CSS styles */
+    </style>
+</head>
+<body>
+    <h1>View Services</h1>
+    <form action="/view" method="post">
+        <input type="text" name="query" placeholder="Search...">
+        <input type="submit" value="Search">
+    </form>
+    <table border="1">
+        <tr>
+            <th>AppCode</th>
+            <th>AppName</th>
+            <th>Env</th>
+            <th>Cloud</th>
+            <th>Region</th>
+            <th>TeamName</th>
+            <th>PMContact</th>
+            <th>TeamContact</th>
+        </tr>
+        {{range .}}
+        <tr>
+            <td>{{.AppCode}}</td>
+            <td>{{.AppName}}</td>
+            <td>{{.Env}}</td>
+            <td>{{.Cloud}}</td>
+            <td>{{.Region}}</td>
+            <td>{{.TeamName}}</td>
+            <td>{{.PMContact}}</td>
+            <td>{{.TeamContact}}</td>
+        </tr>
+        {{end}}
+    </table>
+</body>
+</html>
