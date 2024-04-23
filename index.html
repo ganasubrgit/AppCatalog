@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Service</title>
+</head>
+<body>
+    <h1>Add Service</h1>
+    <form action="/add" method="post">
+        <label>AppCode:</label>
+        <input type="text" name="app_code"><br>
+        <label>AppName:</label>
+        <input type="text" name="app_name"><br>
+        <label>Env:</label>
+        <input type="text" name="env"><br>
+        <label>Cloud:</label>
+        <input type="text" name="cloud"><br>
+        <label>Region:</label>
+        <input type="text" name="region"><br>
+        <label>TeamName:</label>
+        <input type="text" name="team_name"><br>
+        <label>PMContact:</label>
+        <input type="text" name="pm_contact"><br>
+        <label>TeamContact:</label>
+        <input type="text" name="team_contact"><br>
+        <input type="submit" value="Add">
+    </form>
+    <br>
+    <a href="/view">View All Services</a>
+</body>
+</html>
