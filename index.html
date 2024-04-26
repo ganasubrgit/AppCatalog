@@ -66,12 +66,11 @@
                         <label class="form-label">TeamContact:</label>
                         <input type="text" class="form-control" name="team_contact" value="{{.TeamContact}}">
                     </div>
-                    <div class="d-grid">
-                        <input type="submit" class="btn btn-primary" value="{{if .AppCode}}Modify{{else}}Add{{end}}">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <input type="submit" class="btn btn-primary me-md-2" value="{{if .AppCode}}Modify{{else}}Add{{end}}">
+                        <a href="/view" class="btn btn-secondary">View Services</a>
                     </div>
                 </form>
-                <br>
-                <a href="/view" class="btn btn-secondary">View Services</a>
             </div>
         </div>
     </div>
