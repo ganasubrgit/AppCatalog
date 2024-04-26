@@ -2,72 +2,9 @@
 <html>
 <head>
     <title>Service Form</title>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f4f4f4;
-    }
-    .container {
-        width: 80%;
-        margin: auto;
-        overflow: hidden;
-        padding: 20px;
-        background-color: #fff;
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-    h1 {
-        text-align: center;
-    }
-    form {
-        margin-bottom: 20px;
-    }
-    label {
-        display: block;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-    input[type="text"] {
-        width: 100%;
-        padding: 8px;
-        margin-bottom: 10px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-    }
-    input[type="submit"] {
-        width: 100%;
-        background-color: #4CAF50;
-        color: #fff;
-        padding: 10px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-    input[type="submit"]:hover {
-        background-color: #45a049;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    th, td {
-        padding: 10px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
-    th {
-        background-color: #f2f2f2;
-    }
-    a {
-        text-decoration: none;
-        color: #4CAF50;
-    }
-    a:hover {
-        color: #45a049;
-    }
-</style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+   
     <script>
         function validateForm() {
             var appCode = document.forms["serviceForm"]["app_code"].value;
@@ -90,31 +27,53 @@
 </head>
 <body>
     <div class="container">
-    <h1>Service Form</h1>
-    <form name="serviceForm" action="/add" method="post" onsubmit="return validateForm()">
-        {{if .AppCode}}
-        <input type="hidden" name="app_code" value="{{.AppCode}}">
-        {{end}}
-        <label>AppCode:</label>
-        <input type="text" name="app_code" value="{{.AppCode}}"><br>
-        <label>AppName:</label>
-        <input type="text" name="app_name" value="{{.AppName}}"><br>
-        <label>Env:</label>
-        <input type="text" name="env" value="{{.Env}}"><br>
-        <label>Cloud:</label>
-        <input type="text" name="cloud" value="{{.Cloud}}"><br>
-        <label>Region:</label>
-        <input type="text" name="region" value="{{.Region}}"><br>
-        <label>TeamName:</label>
-        <input type="text" name="team_name" value="{{.TeamName}}"><br>
-        <label>PMContact:</label>
-        <input type="text" name="pm_contact" value="{{.PMContact}}"><br>
-        <label>TeamContact:</label>
-        <input type="text" name="team_contact" value="{{.TeamContact}}"><br>
-        <input type="submit" value="{{if .AppCode}}Modify{{else}}Add{{end}}">
-    </form>
-    <br>
-    <a href="/view">View Services</a>
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <h1 class="text-center mb-4">Service Form</h1>
+                <form name="serviceForm" action="/add" method="post" onsubmit="return validateForm()">
+                    {{if .AppCode}}
+                    <input type="hidden" name="app_code" value="{{.AppCode}}">
+                    {{end}}
+                    <div class="mb-3">
+                        <label class="form-label">AppCode:</label>
+                        <input type="text" class="form-control" name="app_code" value="{{.AppCode}}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">AppName:</label>
+                        <input type="text" class="form-control" name="app_name" value="{{.AppName}}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Env:</label>
+                        <input type="text" class="form-control" name="env" value="{{.Env}}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cloud:</label>
+                        <input type="text" class="form-control" name="cloud" value="{{.Cloud}}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Region:</label>
+                        <input type="text" class="form-control" name="region" value="{{.Region}}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">TeamName:</label>
+                        <input type="text" class="form-control" name="team_name" value="{{.TeamName}}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">PMContact:</label>
+                        <input type="text" class="form-control" name="pm_contact" value="{{.PMContact}}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">TeamContact:</label>
+                        <input type="text" class="form-control" name="team_contact" value="{{.TeamContact}}">
+                    </div>
+                    <div class="d-grid">
+                        <input type="submit" class="btn btn-primary" value="{{if .AppCode}}Modify{{else}}Add{{end}}">
+                    </div>
+                </form>
+                <br>
+                <a href="/view" class="btn btn-secondary">View Services</a>
+            </div>
+        </div>
     </div>
 </body>
 </html>

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -28,13 +29,18 @@ var (
 	lastService int
 	mu          sync.Mutex
 	logger      = log.New(os.Stdout, "", log.LstdFlags)
+	jsonFile    = "services.json"
 )
 
 func main() {
+	loadServicesFromFile()
+
 	http.HandleFunc("/", home)
 	http.HandleFunc("/add", addService)
 	http.HandleFunc("/view", viewServices)
 	http.HandleFunc("/search", searchServices)
+	http.HandleFunc("/edit", editService)
+	http.HandleFunc("/update", updateService)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -58,57 +64,197 @@ func addService(w http.ResponseWriter, r *http.Request) {
 		TeamContact: r.FormValue("team_contact"),
 	}
 
-	// Validate the fields
 	if !validateService(service) {
 		http.Error(w, "All fields are required and AppCode must be unique", http.StatusBadRequest)
 		return
 	}
 
-	// Store services in memory
 	mu.Lock()
 	services = append(services, service)
 	mu.Unlock()
 
-	// Store services in JSON file
 	storeServices()
 
-	// Log the added service with timestamp
 	logger.Printf("Service added: %+v\n", service)
 
 	http.Redirect(w, r, "/view", http.StatusSeeOther)
 }
 
 func viewServices(w http.ResponseWriter, r *http.Request) {
-	// Load existing services data from file (if available)
 	loadServicesFromFile()
-
-	// Render the view template with the services data
 	renderServices(w, services)
-}
-
-func loadServicesFromFile() {
-	// Read the existing services data from file
-	data, err := ioutil.ReadFile("services.json")
-	if err != nil {
-		logger.Println("Error reading services from file:", err)
-		return
-	}
-
-	// Unmarshal the JSON data into the services slice
-	err = json.Unmarshal(data, &services)
-	if err != nil {
-		logger.Println("Error unmarshalling services:", err)
-		return
-	}
 }
 
 func searchServices(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 	filteredServices := filterServices(query)
 
-	// Return filtered services as JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(filteredServices)
+	// Check if the request has a query parameter
+	if query != "" {
+		// Render search results as a table in HTML
+		renderServices(w, filteredServices)
+		return
+	}
+
+	// Check if the request is an HTML form submission
+	if r.Header.Get("Accept") == "text/html" {
+		// Render search results as a table in HTML
+		renderServices(w, filteredServices)
+	} else {
+		// Reply with JSON data for API request
+		jsonData, err := json.Marshal(filteredServices)
+		if err != nil {
+			http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonData)
+	}
+}
+
+func editService(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "Service ID is required", http.StatusBadRequest)
+		return
+	}
+
+	serviceID, err := strconv.Atoi(id)
+	if err != nil {
+		http.Error(w, "Invalid service ID", http.StatusBadRequest)
+		return
+	}
+
+	var serviceToEdit *Service
+	for i, service := range services {
+		if service.ID == serviceID {
+			serviceToEdit = &services[i]
+			break
+		}
+	}
+
+	if serviceToEdit == nil {
+		http.Error(w, "Service not found", http.StatusNotFound)
+		return
+	}
+
+	tmpl := template.Must(template.ParseFiles("edit.html"))
+	tmpl.Execute(w, serviceToEdit)
+}
+
+func updateService(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	id := r.FormValue("id")
+	if id == "" {
+		http.Error(w, "Service ID is required", http.StatusBadRequest)
+		return
+	}
+
+	serviceID, err := strconv.Atoi(id)
+	if err != nil {
+		http.Error(w, "Invalid service ID", http.StatusBadRequest)
+		return
+	}
+
+	var serviceToUpdate *Service
+	for i, service := range services {
+		if service.ID == serviceID {
+			serviceToUpdate = &services[i]
+			break
+		}
+	}
+
+	if serviceToUpdate == nil {
+		http.Error(w, "Service not found", http.StatusNotFound)
+		return
+	}
+
+	serviceToUpdate.AppCode = r.FormValue("app_code")
+	serviceToUpdate.AppName = r.FormValue("app_name")
+	serviceToUpdate.Env = r.FormValue("env")
+	serviceToUpdate.Cloud = r.FormValue("cloud")
+	serviceToUpdate.Region = r.FormValue("region")
+	serviceToUpdate.TeamName = r.FormValue("team_name")
+	serviceToUpdate.PMContact = r.FormValue("pm_contact")
+	serviceToUpdate.TeamContact = r.FormValue("team_contact")
+
+	storeServices()
+
+	http.Redirect(w, r, "/view", http.StatusSeeOther)
+}
+
+func renderServices(w http.ResponseWriter, svc []Service) {
+	tmpl := template.Must(template.ParseFiles("view.html"))
+	tmpl.Execute(w, svc)
+}
+
+func loadServicesFromFile() {
+	data, err := ioutil.ReadFile(jsonFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			logger.Println("Services file does not exist. Starting with a new file.")
+			return
+		}
+		logger.Println("Error reading services from file:", err)
+		return
+	}
+
+	err = json.Unmarshal(data, &services)
+	if err != nil {
+		logger.Println("Error unmarshalling services:", err)
+		return
+	}
+
+	// Find the highest ID from the loaded services
+	for _, service := range services {
+		if service.ID > lastService {
+			lastService = service.ID
+		}
+	}
+}
+
+func storeServices() {
+	data, err := json.Marshal(services)
+	if err != nil {
+		logger.Println("Error marshalling services:", err)
+		return
+	}
+
+	err = ioutil.WriteFile(jsonFile, data, 0644)
+	if err != nil {
+		logger.Println("Error writing services to file:", err)
+	}
+}
+
+func generateID() int {
+	mu.Lock()
+	defer mu.Unlock()
+
+	lastService++
+
+	return lastService
+}
+
+func validateService(service Service) bool {
+	if service.AppCode == "" ||
+		service.AppName == "" ||
+		service.Env == "" ||
+		service.Cloud == "" ||
+		service.Region == "" ||
+		service.TeamName == "" ||
+		service.PMContact == "" ||
+		service.TeamContact == "" {
+		return false
+	}
+
+	for _, s := range services {
+		if s.AppCode == service.AppCode && s.ID != service.ID {
+			return false // Duplicate AppCode found
+		}
+	}
+
+	return true
 }
 
 func filterServices(query string) []Service {
@@ -126,73 +272,4 @@ func filterServices(query string) []Service {
 		}
 	}
 	return filtered
-}
-
-func renderServices(w http.ResponseWriter, svc []Service) {
-	tmpl := template.Must(template.ParseFiles("view.html"))
-	tmpl.Execute(w, svc)
-}
-
-func storeServices() {
-	var data []byte
-	var err error
-
-	// Check if the file exists
-	if _, err := os.Stat("services.json"); err == nil {
-		// File exists, read its content
-		data, err = ioutil.ReadFile("services.json")
-		if err != nil {
-			logger.Println("Error reading services.json:", err)
-			return
-		}
-	}
-
-	// Marshal new service data
-	newData, err := json.Marshal(services)
-	if err != nil {
-		logger.Println("Error marshalling services:", err)
-		return
-	}
-
-	// Append new service data to existing or empty content
-	if len(data) > 0 {
-		data = append(data[:len(data)-1], ',') // Remove the last ']' and add a comma for JSON array
-		data = append(data, newData[1:]...)    // Append the new service data (skipping the initial '[')
-	} else {
-		data = newData // No existing content, use the new service data directly
-	}
-
-	// Write the content to the file
-	err = ioutil.WriteFile("services.json", data, 0644)
-	if err != nil {
-		logger.Println("Error writing services to file:", err)
-	}
-}
-
-func generateID() int {
-	mu.Lock()
-	defer mu.Unlock()
-	lastService++
-	return lastService
-}
-
-func validateService(service Service) bool {
-	if service.AppCode == "" ||
-		service.AppName == "" ||
-		service.Env == "" ||
-		service.Cloud == "" ||
-		service.Region == "" ||
-		service.TeamName == "" ||
-		service.PMContact == "" ||
-		service.TeamContact == "" {
-		return false
-	}
-
-	for _, s := range services {
-		if s.AppCode == service.AppCode {
-			return false // Duplicate AppCode found
-		}
-	}
-
-	return true
 }
